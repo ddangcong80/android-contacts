@@ -3,66 +3,63 @@ package campus.tech.kakao.contacts
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ListView
 import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var contactGuide: TextView
-    private lateinit var contactListView: ListView
     private val contacts = mutableListOf<Contact>()
     private lateinit var contactAdapter: ContactAdapter
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var contactGuide: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         contactGuide = findViewById(R.id.contactGuide)
-        contactListView = findViewById(R.id.contactListView)
         val contactAddBtn: FloatingActionButton = findViewById(R.id.contactAddBtn)
+        recyclerView = findViewById(R.id.recyclerView)
+        contactAdapter = ContactAdapter(contacts) { contact ->
+            val intent = Intent(this, ContactDetailActivity::class.java)
+            intent.putExtra("contact", contact)
+            startActivity(intent)
+        }
 
-        contactAdapter = ContactAdapter(this, contacts)
-        contactListView.adapter = contactAdapter
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        recyclerView.adapter = contactAdapter
 
         val startActivityLauncher: ActivityResultLauncher<Intent> =
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-                if (it.resultCode == RESULT_OK && it.data != null) {
-                    val data = it.data!!
-                    val contact = Contact(
-                        data.getStringExtra("name") ?: "",
-                        data.getStringExtra("phoneNumber") ?: "",
-                        data.getStringExtra("mail") ?: "",
-                        data.getStringExtra("birth") ?: "",
-                        data.getStringExtra("gender") ?: "",
-                        data.getStringExtra("memo") ?: ""
-                    )
-                    contacts.add(contact)
-                    contactAdapter.notifyDataSetChanged()
-                    contactGuide.visibility = if (contacts.isEmpty()) View.VISIBLE else View.GONE
-                    contactListView.visibility = if (contacts.isEmpty()) View.GONE else View.VISIBLE
+                when (it.resultCode) {
+                    RESULT_OK -> {
+                        val contact = it.data?.getParcelableExtra("contact") as? Contact
+                        contact?.let { newContact ->
+                            contacts.add(newContact)
+                            contactAdapter.notifyItemInserted(contacts.size - 1)
+                            update()
+                        }
+                    }
                 }
             }
-
         contactAddBtn.setOnClickListener {
             val intent = Intent(this@MainActivity, ContactAddActivity::class.java)
             startActivityLauncher.launch(intent)
         }
 
-        contactListView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
-            val contact = contacts[position]
-            val intent = Intent(this@MainActivity, ContactDetailActivity::class.java).apply {
-                putExtra("name", contact.name)
-                putExtra("phoneNumber", contact.phoneNumber)
-                putExtra("mail", contact.mail)
-                putExtra("birth", contact.birth)
-                putExtra("gender", contact.gender)
-                putExtra("memo", contact.memo)
-            }
-            startActivity(intent)
-        }
+
     }
-}
+
+    private fun update() {
+        if (contacts.isEmpty()) {
+            recyclerView.visibility = View.GONE
+            contactGuide.visibility = View.VISIBLE
+        } else {
+            recyclerView.visibility = View.VISIBLE
+            contactGuide.visibility = View.GONE
+        }
+    }}

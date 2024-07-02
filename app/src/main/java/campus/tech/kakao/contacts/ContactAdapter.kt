@@ -1,41 +1,44 @@
 package campus.tech.kakao.contacts
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
 import android.widget.TextView
+import androidx.recyclerview.widget.RecyclerView
 
-class ContactAdapter(private val context: Context, private val contacts: List<Contact>) : BaseAdapter() {
+class ContactAdapter(
+    private val contacts: MutableList<Contact>,
+    private val onItemClickListener: (Contact) -> Unit
+) : RecyclerView.Adapter<ContactAdapter.ContactViewHolder>() {
 
-    override fun getCount(): Int = contacts.size
-
-    override fun getItem(position: Int): Any = contacts[position]
-
-    override fun getItemId(position: Int): Long = position.toLong()
-
-    override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val view: View
-        val holder: ViewHolder
-
-        if (convertView == null) {
-            view = LayoutInflater.from(context).inflate(R.layout.contact_item, parent, false)
-            holder = ViewHolder()
-            holder.nameTextView = view.findViewById(R.id.nameTextView)
-            view.tag = holder
-        } else {
-            view = convertView
-            holder = view.tag as ViewHolder
-        }
-
-        val contact = contacts[position]
-        holder.nameTextView?.text = contact.name
-
-        return view
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): ContactViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.contact_item, parent, false)
+        return ContactViewHolder(view, onItemClickListener)
     }
 
-    private class ViewHolder {
-        var nameTextView: TextView? = null
+    override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
+        val contact = contacts[position]
+        holder.bind(contact)
+    }
+
+    override fun getItemCount(): Int {
+        return contacts.size
+    }
+
+    inner class ContactViewHolder(
+        view: View,
+        private val onItemClickListener: (Contact) -> Unit
+    ) : RecyclerView.ViewHolder(view) {
+        private val nameView: TextView = itemView.findViewById(R.id.nameTextView)
+
+        fun bind(contact: Contact) {
+            nameView.text = contact.name
+            itemView.setOnClickListener {
+                onItemClickListener(contact)
+            }
+        }
     }
 }

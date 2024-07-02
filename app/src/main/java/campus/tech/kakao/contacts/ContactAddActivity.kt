@@ -28,6 +28,12 @@ class ContactAddActivity : AppCompatActivity() {
     private lateinit var cancel: Button
     private lateinit var save: Button
     private lateinit var datePickerDialog: DatePickerDialog
+    private lateinit var saveName: String
+    private lateinit var savePhoneNumber: String
+    private lateinit var saveMail: String
+    private lateinit var saveBirth: String
+    private lateinit var saveGender: String
+    private lateinit var saveMemo: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,35 +53,26 @@ class ContactAddActivity : AppCompatActivity() {
         }
 
         cancel.setOnClickListener {
-            name.text = null
-            phoneNumber.text = null
-            mail.text = null
-            birth.text = null
-            genderRadio.clearCheck()
-            memo.text = null
+            cleanUpData()
             Toast.makeText(this, "취소 되었습니다", Toast.LENGTH_LONG).show()
         }
 
-        save.apply {
-            this.setOnClickListener {
-                if (checkContact()) {
-                    val intent: Intent = Intent()
-                    intent.putExtra("name", name.text.toString())
-                    intent.putExtra("phoneNumber", phoneNumber.text.toString())
-                    intent.putExtra("mail", mail.text.toString())
-                    intent.putExtra("birth", birth.text.toString())
-                    val gender = when (genderRadio.checkedRadioButtonId) {
-                        R.id.female -> "여성"
-                        R.id.male -> "남성"
-                        else -> ""
-                    }
-                    intent.putExtra("gender", gender)
-                    intent.putExtra("memo", memo.text.toString())
-                    setResult(RESULT_OK, intent)
-                    finish()
-                }
+        save.setOnClickListener {
+            saveContact()
+            val contactValidation: String? = checkContact()
+            if (contactValidation.isNullOrEmpty()) {
+                val intent = Intent()
+                intent.putExtra(
+                    "contact",
+                    Contact(saveName, savePhoneNumber, saveMail, saveBirth, saveGender, saveMemo)
+                )
+                setResult(RESULT_OK, intent)
+                finish()
+            } else {
+                showToast(contactValidation)
             }
         }
+
 
         onBackPressedDispatcher.addCallback(this, onBackPressedCallback)
     }
@@ -109,16 +106,11 @@ class ContactAddActivity : AppCompatActivity() {
         datePickerDialog.show()
     }
 
-    private fun checkContact(): Boolean {
-        if (name.getText().isEmpty()) {
-            Toast.makeText(this, "이름을 반드시 적어야 합니다", Toast.LENGTH_LONG).show()
-            return false
-        } else if (phoneNumber.getText().isEmpty()) {
-            Toast.makeText(this, "전화번호를 반드시 적어야 합니다", Toast.LENGTH_LONG).show()
-            return false
-        } else {
-            Toast.makeText(this, "저장이 완료 되었습니다", Toast.LENGTH_LONG).show()
-            return true
+    private fun checkContact(): String? {
+        return when {
+            saveName.isEmpty() -> "이름을 입력해주세요"
+            savePhoneNumber.isEmpty() -> "전화번호를 입력해주세요"
+            else -> null
         }
     }
 
@@ -146,12 +138,38 @@ class ContactAddActivity : AppCompatActivity() {
     }
 
     private fun checkData(): Boolean {
-        return name.text.isNotEmpty() ||
-                phoneNumber.text.isNotEmpty() ||
-                mail.text.isNotEmpty() ||
-                birth.text.isNotEmpty() ||
+        return name.text.toString().isNotEmpty() ||
+                phoneNumber.text.toString().isNotEmpty() ||
+                mail.text.toString().isNotEmpty() ||
+                birth.text.toString().isNotEmpty() ||
                 genderRadio.checkedRadioButtonId != -1 ||
-                memo.text.isNotEmpty()
+                memo.text.toString().isNotEmpty()
     }
 
+    private fun cleanUpData() {
+        name.text = null
+        phoneNumber.text = null
+        mail.text = null
+        birth.text = null
+        genderRadio.clearCheck()
+        memo.text = null
+    }
+
+    private fun saveContact() {
+        saveName = name.text.toString()
+        savePhoneNumber = phoneNumber.text.toString()
+        saveMail = mail.text.toString()
+        saveBirth = birth.text.toString()
+        val selectedId = genderRadio.checkedRadioButtonId
+        saveGender = when (selectedId) {
+            R.id.male -> "남성"
+            R.id.female -> "여성"
+            else -> ""
+        }
+        saveMemo = memo.text.toString()
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
 }
